@@ -1,6 +1,6 @@
-# PassThrough prototype wire protocol v1
+# Transitional desktop-link wire protocol v1
 
-Scope: initial Wi-Fi/USB TCP transport. No Bluetooth transport implementation or native headset-role claim.
+Scope: the current prototype's Wi-Fi/USB TCP path, retained temporarily while the separate local-network desktop-link component is designed. This protocol is not the PassThrough Bluetooth-to-hearing-aid interface. No Bluetooth computer-to-phone transport or native headset-role claim is part of the revised scope.
 
 1. Desktop listens on an explicitly configured endpoint; loopback is the default.
 2. Phone establishes TLS1.2 or TLS1.3. The leaf certificate must be currently valid and its SHA-256 DER fingerprint must match the out-of-band desktop fingerprint before any token/audio is sent. Self-signed desktop identities are intended; pin replacement requires explicit user configuration.

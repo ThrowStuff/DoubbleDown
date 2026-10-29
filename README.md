@@ -1,16 +1,15 @@
-# DoubbleDown — PassThrough audio bridge
+# DoubbleDown — PassThrough
 
-**DoubbleDown** is the project repository; **PassThrough** is the app name. This is an original GPL-3.0-only Android companion and desktop audio-relay prototype for hearing-aid users. Existing projects were used as learning references; no third-party implementation has been copied into this source.
+**DoubbleDown** is the project repository; **PassThrough** is the Android app. The revised scope makes PassThrough a Bluetooth-first, hearing-aid companion designed for broad device compatibility. Computer audio over a local network belongs in a separate desktop-link component. The source is original and licensed GPL-3.0-only; existing projects were used as learning references, not copied.
 
-This is an early, incomplete prototype, not a replacement for Signia's full feature set. The Android app and Linux desktop companion build. Live tests confirmed spoken playback through the Android hearing-device output and matched a known speaker-played tone in the hearing-aid microphone uplink. That acoustic test used one Pixel 7 setup; it does not establish voice quality, long-term reliability, or compatibility with other devices. Windows has not been run or validated.
+This remains an early prototype, not a replacement for Signia's full feature set. The current code still combines hearing-aid routes with a Wi-Fi/USB computer relay; that relay is transitional and must be separated from the PassThrough core. Live tests confirmed spoken playback through the Android hearing-device output and matched a known speaker-played tone in the hearing-aid microphone uplink. Both tests used one Pixel 7 setup; they do not establish voice quality, long-term reliability, or compatibility with other devices. Windows has not been run or validated, and Windows 11 testing is paused until the rescope is complete.
 
-Implemented: saved connection settings, device and route inventory, explicit audio-route selection, authenticated TLS Wi-Fi/USB relay, route-loss handling, Linux desktop controls and audio endpoints. Bluetooth PC-to-phone transport, hearing-aid program controls, robust cross-device compatibility and Windows runtime support remain unfinished. See [desktop documentation](desktop/README.md), [requirements](REQUIREMENTS.md) and [wire protocol](PROTOCOL.md).
+Implemented in the transitional prototype: saved connection settings, device and route inventory, explicit audio-route selection, authenticated TLS Wi-Fi/USB relay, route-loss handling, and Linux desktop audio endpoints. PassThrough's target is direct hearing-aid Bluetooth operation. The separate desktop-link component will use the local network; a Bluetooth computer-to-phone link is not part of the revised scope. Hearing-aid program controls, broad cross-device compatibility, the component split and Windows runtime support remain unfinished. See [scope and architecture](SCOPE.md), [desktop documentation](desktop/README.md), [requirements](REQUIREMENTS.md) and [wire protocol](PROTOCOL.md).
 
-## Intended complete package
+## Intended components
 
-- Hearing-aid selection and pair grouping, per-ear battery, program enumeration and supported user controls.
-- Playback plus actual hearing-aid-origin microphone relay to a desktop companion, with explicit input/output selection and route-loss handling.
-- Secure local pairing, user-visible streaming controls, reconnect handling, diagnostics and an accessible interface.
+- **PassThrough for Android:** hearing-aid selection and grouping, per-ear battery, supported program controls, Bluetooth audio routing, and actual hearing-aid-origin microphone relay where the aid and Android device expose it.
+- **Separate desktop-link component:** encrypted, authenticated computer-to-phone audio over the local network, with explicit audio endpoints, user-visible streaming controls, reconnect handling and diagnostics.
 - Capability-specific explanations where proprietary functions or Android platform restrictions prevent support.
 
 Cloud Signia Assistant, provider TeleCare and permanent fitting writes have no verified replacement interface. These are research gaps, not implemented features. The project does not claim clinical fitting, universal manufacturer support, Windows validation or a complete vendor-app replacement.
@@ -25,9 +24,9 @@ JDK 17, Android SDK platform 35 and build-tools 35.0.0. Set `JAVA_HOME` and `AND
 
 The Gradle 8.11.1 wrapper includes distribution checksum verification. Android 8/API 26 is the compatibility baseline; availability of hearing-aid playback depends on OS and device support. Microphone communication routing requires Android 12/API 31+ and an actual compatible hearing-device route. Compilation does not establish manufacturer-wide compatibility. Desktop targets are Linux and Windows 11; Windows 10 is outside scope.
 
-## Prototype relay
+## Transitional computer relay
 
-Wi-Fi and USB use the same pinned TLS connection to a desktop companion. Set the desktop address, port `49721`, SHA-256 certificate fingerprint and 64-character session token. Verify the fingerprint out of band on your own desktop. For USB tethering, use the computer's tether-network address. For ADB, run `adb reverse tcp:49721 tcp:49721` on the computer and choose USB debugging mode; the phone uses localhost. The tested live path used Wi-Fi ADB forwarding; direct LAN and physical USB operation still need validation.
+The current prototype connects the phone to a desktop companion over pinned TLS using Wi-Fi or USB/ADB. This is retained only as the transitional implementation while the separate desktop-link component is designed. See [scope and architecture](SCOPE.md) before extending this path. Its tested live path used ADB reverse forwarding; direct LAN and physical USB operation still need validation.
 
 The stream format is mono PCM16LE at 32 kHz; stereo and adaptive latency are unfinished. Audio is not recorded to disk during normal relay use. Phone microphone/speaker are excluded from route choices. Android may reroute queued audio before callbacks execute, so source/output isolation and disconnect tests on real devices remain required; preferred-device selection is not a hard OS routing guarantee.
 

@@ -1,10 +1,10 @@
 # PassThrough desktop
 
-Original GPL-3.0-only companion for the PassThrough Android app. Desktop targets: **Linux and Windows11**. Windows10 is outside official support. Linux is the first live-test target; Windows code/build recipes are not Windows hardware validation.
+Original GPL-3.0-only desktop-link prototype for PassThrough. Desktop targets: **Linux and Windows11**. Windows10 is outside official support. The revised scope keeps this as a separate local-network component; the current phone/desktop TLS relay is transitional. Linux is the first live-test target; Windows code/build recipes are not Windows hardware validation. Windows11 testing is paused until the rescope is complete.
 
 ## Current implementation
 
-Native Qt configuration UI; explicit Wi-Fi/USB connection selection, certificate fingerprint and session token, explicit audio input/output selectors, start/stop, temporary Linux virtual microphone setup and read-only endpoint enumeration. Bluetooth computer transport is visibly unavailable pending implementation.
+Native Qt configuration UI; explicit Wi-Fi/USB prototype connection selection, certificate fingerprint and session token, explicit audio input/output selectors, start/stop, temporary Linux virtual microphone setup and read-only endpoint enumeration. The current implementation still needs separation from PassThrough's hearing-aid controls. A Bluetooth computer-to-phone transport is not part of the revised scope.
 
 TLS1.2+ server matches the Android prototype protocol. Private desktop identity persists in the local application data directory; token changes each launch. Verify/copy these values privately into the phone. No account/cloud service or automatic default-route changes. Normal relay use does not record audio. Listening starts only when requested; network bind defaults to loopback.
 
