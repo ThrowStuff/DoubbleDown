@@ -99,6 +99,10 @@ public final class RelayService extends Service {
         throw new IOException("Selected hearing-device route is unavailable");
     }
 
+    private static String routeDescription(AudioDeviceInfo device) {
+        return device==null ? "none" : "type "+device.getType()+"/id "+device.getId();
+    }
+
     private void runRelay(Intent request, boolean microphone) {
         Thread uplink = null;
         try {
@@ -172,7 +176,7 @@ public final class RelayService extends Service {
                     AudioRecord active=recorder;
                     AudioDeviceInfo actual=active==null ? null : active.getRoutedDevice();
                     if (microphoneVerified && (actual==null || actual.getId()!=selectedInput)) {
-                        stopRelay("Stopped: selected microphone route changed");
+                        stopRelay("Stopped: selected microphone route changed (expected type "+input.getType()+"/id "+selectedInput+", active "+routeDescription(actual)+")");
                     }
                 },new Handler(Looper.getMainLooper()));
                 recorder.startRecording();
@@ -245,7 +249,7 @@ public final class RelayService extends Service {
                 if (count<=0) throw new IOException("Microphone capture stopped");
                 AudioDeviceInfo actual=recorder.getRoutedDevice();
                 if (before==null || before.getId()!=selectedId || actual==null || actual.getId()!=selectedId || epoch!=inputRouteEpoch.get()) {
-                    if (microphoneVerified) throw new IOException("Selected hearing-device microphone route changed");
+                    if (microphoneVerified) throw new IOException("Selected hearing-device microphone route changed (expected id "+selectedId+", before "+routeDescription(before)+", after "+routeDescription(actual)+")");
                     if (SystemClock.elapsedRealtime()<deadline) continue; // discard every unverified sample
                     throw new IOException("Selected hearing-device microphone is not the actual recording source");
                 }
@@ -262,7 +266,16 @@ public final class RelayService extends Service {
     private void closeConnection() {
         PinnedConnection active=connection;
         connection=null;
-        if (active!=null) try { active.close(); } catch (IOException ignored) { }
+        if (active!=null) {
+            // SSLSocket.close() may send TLS close_notify and perform network I/O.
+            // stopRelay() is also called from the main thread by the Stop button,
+            // route callbacks, and audio-focus callbacks, where Android forbids it.
+            Thread closer=new Thread(() -> {
+                try { active.close(); } catch (IOException | RuntimeException ignored) { }
+            },"passthrough-tls-close");
+            closer.setDaemon(true);
+            closer.start();
+        }
     }
     private void stopRelay(String reason) {
         status=reason;

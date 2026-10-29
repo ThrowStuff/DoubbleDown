@@ -123,8 +123,8 @@ public final class MainActivity extends Activity {
                     .append(typeName(device.getType())).append('\n');
             }
         }
-        text.append("\nAn available input does not prove that a recorder uses it. Hearing-aid microphone capture has not been tested.\n")
-            .append("\nProgram controls and Bluetooth computer relay are not implemented yet. Wi-Fi/USB relay has not been tested on this phone.");
+        text.append("\nOn the Pixel 7 test setup, Android verified the selected hearing-aid microphone route and a known speaker-played tone matched the uplink. Other devices and speech quality still need testing.\n")
+            .append("\nProgram controls and Bluetooth computer relay are not implemented yet. The relay test used ADB forwarding; direct LAN and physical USB remain untested.");
         details.setText(text.toString());
     }
 
