@@ -4,7 +4,7 @@ Original GPL-3.0-only desktop-link prototype for PassThrough. Desktop targets: *
 
 ## Current implementation
 
-Native Qt configuration UI; explicit Wi-Fi/USB prototype connection selection, certificate fingerprint and session token, explicit audio input/output selectors, start/stop, temporary Linux virtual microphone setup and read-only endpoint enumeration. The current implementation still needs separation from PassThrough's hearing-aid controls. A Bluetooth computer-to-phone transport is not part of the revised scope.
+Native Qt configuration UI; explicit Wi-Fi/USB prototype connection selection, certificate fingerprint and session token, explicit audio input/output selectors, start/stop, temporary Linux virtual microphone setup and read-only endpoint enumeration. The Android TLS session and frame codec are isolated in the `:desktop-link` library; settings and audio lifecycle remain in the app. A Bluetooth computer-to-phone transport is not part of the revised scope.
 
 TLS1.2+ server matches the Android prototype protocol. Private desktop identity persists in the local application data directory; token changes each launch. Verify/copy these values privately into the phone. No account/cloud service or automatic default-route changes. Normal relay use does not record audio. Listening starts only when requested; network bind defaults to loopback.
 

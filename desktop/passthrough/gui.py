@@ -47,7 +47,7 @@ class Window(QMainWindow):
         connection = QGroupBox('Connection')
         form = QFormLayout(connection)
         self.mode = QComboBox()
-        self.mode.addItems(['USB / local connection', 'Wi-Fi / local network', 'Bluetooth · not available yet'])
+        self.mode.addItems(['USB / local connection', 'Wi-Fi / local network'])
         form.addRow('Connect by', self.mode)
         self.bind = QLineEdit('127.0.0.1')
         form.addRow('Listen address', self.bind)
@@ -138,13 +138,11 @@ class Window(QMainWindow):
 
     def mode_changed(self, index):
         self.bind.setText('0.0.0.0' if index == 1 else '127.0.0.1')
-        if index == 2:
-            self.instructions.setText('Bluetooth computer transport is still being implemented. Wi-Fi and USB are available for testing; this does not enable a native Bluetooth headset role.')
-        elif index == 1:
+        if index == 1:
             self.instructions.setText('Use a computer address listed above in the phone app. Listening on 0.0.0.0 allows local-network connections; the phone must verify this certificate and provide the session token. Firewall permission may be needed.')
         else:
             self.instructions.setText('USB debugging: run adb reverse tcp:49721 tcp:49721 for the selected phone. USB tethering uses the computer’s USB network address: set that as the listen address, and enter it on the phone.')
-        self.start.setEnabled(index != 2 and self.identity is not None and self.server is None)
+        self.start.setEnabled(self.identity is not None and self.server is None)
 
     def refresh_devices(self):
         selected_in, selected_out = self.capture.currentData(), self.playback.currentData()

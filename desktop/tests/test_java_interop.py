@@ -25,9 +25,9 @@ class JavaInterop(unittest.TestCase):
                     raise ValueError('unexpected PCM size')
                 self.received += 1
         with tempfile.TemporaryDirectory() as directory:
-            java = root/'app/src/main/java/org/openhearing/app'
+            java = root/'desktop-link/src/main/java/org/openhearing/desktoplink'
             subprocess.run([str(jdk/'bin/javac'), '-d', directory,
-                            str(java/'FrameCodec.java'), str(java/'PinnedConnection.java'),
+                            str(java/'PcmFrames.java'), str(java/'DesktopLinkSession.java'),
                             str(root/'tests/TlsThroughputProbe.java')], check=True)
             identity = Identity(Path(directory)/'identity')
             audio = RateAudio()
@@ -36,7 +36,7 @@ class JavaInterop(unittest.TestCase):
             self.assertTrue(server.ready.wait(5))
             try:
                 result = subprocess.run([str(jdk/'bin/java'), '-cp', directory,
-                                         'org.openhearing.app.TlsThroughputProbe', str(server.address[1]),
+                                         'org.openhearing.desktoplink.TlsThroughputProbe', str(server.address[1]),
                                          identity.fingerprint, identity.token],
                                         capture_output=True, text=True, timeout=10)
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -60,9 +60,9 @@ class JavaInterop(unittest.TestCase):
             def play_frame(self, pcm):
                 self.received.append(pcm)
         with tempfile.TemporaryDirectory() as directory:
-            java = root/'app/src/main/java/org/openhearing/app'
+            java = root/'desktop-link/src/main/java/org/openhearing/desktoplink'
             subprocess.run([str(jdk/'bin/javac'), '-d', directory,
-                            str(java/'FrameCodec.java'), str(java/'PinnedConnection.java'),
+                            str(java/'PcmFrames.java'), str(java/'DesktopLinkSession.java'),
                             str(root/'tests/TlsProbe.java')], check=True)
             identity = Identity(Path(directory)/'identity')
             audio = ProbeAudio()
@@ -71,7 +71,7 @@ class JavaInterop(unittest.TestCase):
             self.assertTrue(server.ready.wait(5))
             try:
                 result = subprocess.run([str(jdk/'bin/java'), '-cp', directory,
-                                         'org.openhearing.app.TlsProbe', str(server.address[1]),
+                                         'org.openhearing.desktoplink.TlsProbe', str(server.address[1]),
                                          identity.fingerprint, identity.token],
                                         capture_output=True, text=True, timeout=10)
                 self.assertEqual(result.returncode, 0, result.stderr)

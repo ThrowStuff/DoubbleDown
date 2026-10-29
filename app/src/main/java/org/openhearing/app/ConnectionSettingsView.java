@@ -15,7 +15,7 @@ import android.widget.TextView;
 
 /** Saves local configuration only. Selecting a transport never initiates a connection. */
 public final class ConnectionSettingsView extends LinearLayout {
-    private static final String[] MODES = {"Bluetooth", "Wi-Fi", "USB"};
+    private static final String[] MODES = {"Wi-Fi", "USB"};
     private final SharedPreferences preferences;
     private final Spinner transport;
     private final Spinner usbMode;
@@ -95,7 +95,16 @@ public final class ConnectionSettingsView extends LinearLayout {
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
-        int selected = Math.max(0, Math.min(2, preferences.getInt("transport", 0)));
+        // The old preference also contained a misleading Bluetooth computer-link choice.
+        // Migrate Wi-Fi and USB selections; an old Bluetooth/default value becomes unconfigured Wi-Fi.
+        int selected;
+        if (preferences.contains("desktopLinkTransport")) {
+            selected = Math.max(0, Math.min(1, preferences.getInt("desktopLinkTransport", 0)));
+        } else {
+            int legacy = preferences.getInt("transport", 0);
+            selected = legacy == 2 ? 1 : 0;
+            preferences.edit().putInt("desktopLinkTransport", selected).apply();
+        }
         transport.setSelection(selected);
         showMode(selected);
     }
@@ -116,10 +125,9 @@ public final class ConnectionSettingsView extends LinearLayout {
     }
 
     private void showMode(int mode) {
-        networkFields.setVisibility(mode != 0 ? VISIBLE : GONE);
-        usbFields.setVisibility(mode == 2 ? VISIBLE : GONE);
-        if (mode == 0) explanation.setText("Bluetooth relay is planned. We still need to verify the phone’s supported connection roles. Bluetooth computer selection will appear when the relay is available.");
-        else if (mode == 1) explanation.setText("Use the same local network as your computer. Enter its address, port, certificate fingerprint and session token from the desktop companion. Verify the fingerprint on your own desktop before connecting.");
+        networkFields.setVisibility(VISIBLE);
+        usbFields.setVisibility(mode == 1 ? VISIBLE : GONE);
+        if (mode == 0) explanation.setText("Use the same local network as your computer. Enter its address, port, certificate fingerprint and session token from the desktop companion. Verify the fingerprint on your own desktop before connecting.");
         else explanation.setText("For tethering, enter your computer’s USB network address. For ADB, configure adb reverse tcp:49721 tcp:49721 on your computer; the phone connects to localhost. The app does not enable tethering or debugging for you. Both methods verify the desktop certificate.");
     }
 
@@ -127,32 +135,30 @@ public final class ConnectionSettingsView extends LinearLayout {
         int mode = transport.getSelectedItemPosition();
         String host = computer.getText().toString().trim();
         String portText = port.getText().toString().trim();
-        if (mode != 0) {
-            if (!(mode==2 && usbMode.getSelectedItemPosition()==1) && (host.isEmpty() || host.matches(".*\\s+.*") || host.contains("://") || host.contains("/"))) {
-                computer.setError("Enter an IP address or hostname, without a URL or spaces");
-                computer.requestFocus();
-                return;
-            }
-            if (!fingerprint.getText().toString().replace(":", "").trim().matches("(?i)[0-9a-f]{64}")) {
-                fingerprint.setError("Copy the desktop SHA-256 certificate fingerprint");
-                fingerprint.requestFocus();
-                return;
-            }
-            if (!token.getText().toString().trim().matches("[0-9a-f]{64}")) {
-                token.setError("Copy the 64-character desktop session token");
-                token.requestFocus();
-                return;
-            }
-            try {
-                int number = Integer.parseInt(portText);
-                if (number < 1 || number > 65535) throw new NumberFormatException();
-            } catch (NumberFormatException error) {
-                port.setError("Enter a port from 1 to 65535");
-                port.requestFocus();
-                return;
-            }
+        if (!(mode==1 && usbMode.getSelectedItemPosition()==1) && (host.isEmpty() || host.matches(".*\\s+.*") || host.contains("://") || host.contains("/"))) {
+            computer.setError("Enter an IP address or hostname, without a URL or spaces");
+            computer.requestFocus();
+            return;
         }
-        preferences.edit().putInt("transport", mode)
+        if (!fingerprint.getText().toString().replace(":", "").trim().matches("(?i)[0-9a-f]{64}")) {
+            fingerprint.setError("Copy the desktop SHA-256 certificate fingerprint");
+            fingerprint.requestFocus();
+            return;
+        }
+        if (!token.getText().toString().trim().matches("[0-9a-f]{64}")) {
+            token.setError("Copy the 64-character desktop session token");
+            token.requestFocus();
+            return;
+        }
+        try {
+            int number = Integer.parseInt(portText);
+            if (number < 1 || number > 65535) throw new NumberFormatException();
+        } catch (NumberFormatException error) {
+            port.setError("Enter a port from 1 to 65535");
+            port.requestFocus();
+            return;
+        }
+        preferences.edit().putInt("desktopLinkTransport", mode)
             .putString("host", host).putString("port", portText)
             .putString("fingerprint", fingerprint.getText().toString().trim())
             .putString("token", token.getText().toString().trim())

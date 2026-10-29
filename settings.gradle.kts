@@ -4,4 +4,4 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "PassThrough"
-include(":app")
+include(":app", ":desktop-link")

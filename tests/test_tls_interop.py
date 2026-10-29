@@ -41,9 +41,9 @@ class Interop(unittest.TestCase):
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         der = ssl.PEM_cert_to_DER_cert((cls.path/'cert.pem').read_text())
         cls.pin = hashlib.sha256(der).hexdigest()
-        java = ROOT/'app/src/main/java/org/openhearing/app'
+        java = ROOT/'desktop-link/src/main/java/org/openhearing/desktoplink'
         subprocess.run([str(JDK/'bin/javac'), '-d', str(cls.path),
-                        str(java/'FrameCodec.java'), str(java/'PinnedConnection.java'),
+                        str(java/'PcmFrames.java'), str(java/'DesktopLinkSession.java'),
                         str(ROOT/'tests/TlsProbe.java')], check=True)
 
     @classmethod
@@ -85,7 +85,7 @@ class Interop(unittest.TestCase):
         thread = threading.Thread(target=serve)
         thread.start()
         result = subprocess.run([str(JDK/'bin/java'), '-cp', str(self.path),
-                                 'org.openhearing.app.TlsProbe', str(port),
+                                 'org.openhearing.desktoplink.TlsProbe', str(port),
                                  self.pin if pin is None else pin, token],
                                 capture_output=True, text=True, timeout=15)
         thread.join(10)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-package org.openhearing.app;
+package org.openhearing.desktoplink;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -16,19 +16,18 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-/** A pinned server identity is checked during TLS, before any token or PCM is sent. */
-public final class PinnedConnection implements AutoCloseable {
+/** Authenticated, certificate-pinned connection to the desktop-link peer. */
+public final class DesktopLinkSession implements AutoCloseable {
     private final SSLSocket socket;
-    public final DataInputStream input;
-    public final DataOutputStream output;
+    private final DataInputStream input;
+    private final DataOutputStream output;
 
-    public PinnedConnection(String host, int port, String fingerprint, String token) throws Exception {
+    public DesktopLinkSession(String host, int port, String fingerprint, String token) throws Exception {
         String pin = fingerprint.replace(":", "").trim().toLowerCase(java.util.Locale.ROOT);
-        if (!pin.matches("[0-9a-f]{64}") || !token.matches("[0-9a-f]{64}")) {
+        if (!pin.matches("[0-9a-f]{64}") || !token.matches("[0-9a-f]{64}"))
             throw new IOException("Enter the desktop certificate fingerprint and session token (64 hexadecimal characters each)");
-        }
         byte[] expected = new byte[32];
-        for (int i = 0; i < 32; i++) expected[i] = (byte) Integer.parseInt(pin.substring(i*2,i*2+2),16);
+        for (int i = 0; i < 32; i++) expected[i] = (byte) Integer.parseInt(pin.substring(i * 2, i * 2 + 2), 16);
         SSLContext tls = SSLContext.getInstance("TLS");
         tls.init(null, new TrustManager[]{new X509TrustManager() {
             @Override public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
@@ -49,11 +48,11 @@ public final class PinnedConnection implements AutoCloseable {
         SSLSocket secure = null;
         try {
             raw.setTcpNoDelay(true);
-            raw.connect(new InetSocketAddress(host,port),5000);
+            raw.connect(new InetSocketAddress(host, port), 5000);
             raw.setSoTimeout(5000);
-            secure = (SSLSocket) tls.getSocketFactory().createSocket(raw,host,port,true);
-            java.util.List<String> supported=java.util.Arrays.asList(secure.getSupportedProtocols());
-            java.util.ArrayList<String> protocols=new java.util.ArrayList<>();
+            secure = (SSLSocket) tls.getSocketFactory().createSocket(raw, host, port, true);
+            java.util.List<String> supported = java.util.Arrays.asList(secure.getSupportedProtocols());
+            java.util.ArrayList<String> protocols = new java.util.ArrayList<>();
             if (supported.contains("TLSv1.3")) protocols.add("TLSv1.3");
             if (supported.contains("TLSv1.2")) protocols.add("TLSv1.2");
             if (protocols.isEmpty()) throw new IOException("TLS1.2 or newer is required");
@@ -67,7 +66,8 @@ public final class PinnedConnection implements AutoCloseable {
             out.flush();
             byte[] reply = new byte[4];
             in.readFully(reply);
-            if (!java.util.Arrays.equals(reply,"OKAY".getBytes(StandardCharsets.US_ASCII))) throw new IOException("Desktop authentication rejected");
+            if (!java.util.Arrays.equals(reply, "OKAY".getBytes(StandardCharsets.US_ASCII)))
+                throw new IOException("Desktop authentication rejected");
             socket = secure;
             input = in;
             output = out;
@@ -77,5 +77,8 @@ public final class PinnedConnection implements AutoCloseable {
             throw error;
         }
     }
+
+    public byte[] readFrame() throws IOException { return PcmFrames.read(input); }
+    public void writeFrame(byte[] pcm, int count) throws IOException { PcmFrames.write(output, pcm, count); }
     @Override public void close() throws IOException { socket.close(); }
 }

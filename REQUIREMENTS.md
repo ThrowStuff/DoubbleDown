@@ -8,7 +8,7 @@ The PassThrough core does not own the computer-to-phone local-network transport.
 
 ## Audio
 
-Support user-selectable Bluetooth, Wi-Fi and USB computer links. Provide saved configuration per transport, computer/device selection, readable capability and connection status, explicit connect/disconnect, and user-visible transport failure. USB choices distinguish tethered networking from ADB. Switching modes must stop the current relay cleanly and preserve hearing-aid bonds; no silent fallback. Bluetooth implementation depends on verified Android roles; distinguish custom Bluetooth data transport with a companion from behaving as a standard Bluetooth headset.
+Support user-selectable Wi-Fi and USB computer links. Bluetooth is reserved for hearing-aid connections. Provide saved configuration per transport, computer/device selection, readable capability and connection status, explicit connect/disconnect, and user-visible transport failure. USB choices distinguish tethered networking from ADB. Switching modes must stop the current relay cleanly and preserve hearing-aid bonds; no silent fallback.
 
 Prove bilateral playback with user listening confirmation. Prove microphone input originates in the aids by checking actual AudioRecord routing and a user-controlled isolation test; never silently fall back to the phone microphone. ASHA-only connections must report microphone unavailable. A route request or service advertisement alone is insufficient.
 
@@ -34,6 +34,6 @@ Windows 11 and Linux are required for the separate desktop-link component. Windo
 
 Support Android across manufacturers/platforms, not a Pixel-only app. Baseline Android8/API26 for app/UI and available playback routes; newer capabilities gated by API and runtime device support. Communication-route mic selection requires Android12/API31 APIs; LEAudio capability API33+, actual hearing-aid microphone route must be verified. Document unsupported capabilities clearly rather than advertise every feature on every device. Test across Android versions and vendors; Pixel7 is one reference target.
 
-Testing order: finish the scope and component split first. Then test the separate desktop-link component on Linux; resume Windows 11 validation only after the rescope is complete. White leads architecture and integration; Red holds Windows testing until then.
+Testing order: finish the scope and component split first. Then test the separate desktop-link component on Linux; resume Windows 11 validation only after the rescope is complete. White leads architecture and integration; Red independently reviews the source and holds Windows testing until then.
 
 Budget correction: user explicitly excludes persistentWindows11 test VM, its image and VM disk from project storage limitations. Treat as reusable tool. Project artifacts remain separately accounted.

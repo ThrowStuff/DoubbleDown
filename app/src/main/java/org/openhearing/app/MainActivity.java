@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
             }
         }
         text.append("\nOn the Pixel 7 test setup, Android verified the selected hearing-aid microphone route and a known speaker-played tone matched the uplink. Other devices and speech quality still need testing.\n")
-            .append("\nProgram controls and Bluetooth computer relay are not implemented yet. The relay test used ADB forwarding; direct LAN and physical USB remain untested.");
+            .append("\nProgram controls are not implemented yet. Computer audio uses the separate Wi-Fi/USB desktop link; the live relay test used ADB forwarding. Direct LAN and physical USB remain untested.");
         details.setText(text.toString());
     }
 

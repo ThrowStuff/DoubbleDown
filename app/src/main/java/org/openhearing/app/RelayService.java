@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.media.*;
 import android.os.*;
+import org.openhearing.desktoplink.DesktopLinkSession;
+import org.openhearing.desktoplink.PcmFrames;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -16,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class RelayService extends Service {
     public static volatile String status = "Not connected";
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile PinnedConnection connection;
+    private volatile DesktopLinkSession connection;
     private volatile AudioRecord recorder;
     private volatile AudioTrack player;
     private volatile Thread worker;
@@ -112,13 +114,12 @@ public final class RelayService extends Service {
             microphoneVerified=false; playbackVerified=false;
             manager.registerAudioDeviceCallback(devices,new Handler(Looper.getMainLooper()));
             SharedPreferences config = getSharedPreferences("connection",MODE_PRIVATE);
-            int mode = config.getInt("transport",0);
-            if (mode==0) throw new IOException("Bluetooth computer relay is not implemented yet");
+            int mode = config.getInt("desktopLinkTransport",0);
             String host = config.getString("host","").trim();
-            if (mode==2 && config.getInt("usbMode",0)==1) host="127.0.0.1";
+            if (mode==1 && config.getInt("usbMode",0)==1) host="127.0.0.1";
             int port = Integer.parseInt(config.getString("port","49721"));
             if (port<1 || port>65535 || host.isEmpty()) throw new IOException("Configure the computer address and port first");
-            PinnedConnection established = new PinnedConnection(host,port,
+            DesktopLinkSession established = new DesktopLinkSession(host,port,
                 config.getString("fingerprint",""),config.getString("token",""));
             connection = established;
             if (!running.get()) { established.close(); return; }
@@ -142,9 +143,9 @@ public final class RelayService extends Service {
             if (manager.requestAudioFocus(focus)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 throw new IOException("Android did not grant audio focus");
             }
-            AudioFormat outputFormat = new AudioFormat.Builder().setSampleRate(FrameCodec.SAMPLE_RATE)
+            AudioFormat outputFormat = new AudioFormat.Builder().setSampleRate(PcmFrames.SAMPLE_RATE)
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build();
-            int playbackMinimum = AudioTrack.getMinBufferSize(FrameCodec.SAMPLE_RATE,
+            int playbackMinimum = AudioTrack.getMinBufferSize(PcmFrames.SAMPLE_RATE,
                 AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
             if (playbackMinimum<=0) throw new IOException("Requested playback format is unavailable");
             player = new AudioTrack.Builder().setAudioAttributes(attributes).setAudioFormat(outputFormat)
@@ -163,11 +164,11 @@ public final class RelayService extends Service {
                 if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) {
                     throw new SecurityException("Microphone permission was revoked");
                 }
-                int captureMinimum = AudioRecord.getMinBufferSize(FrameCodec.SAMPLE_RATE,
+                int captureMinimum = AudioRecord.getMinBufferSize(PcmFrames.SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
                 if (captureMinimum<=0) throw new IOException("Requested microphone format is unavailable");
                 recorder = new AudioRecord.Builder().setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
-                    .setAudioFormat(new AudioFormat.Builder().setSampleRate(FrameCodec.SAMPLE_RATE)
+                    .setAudioFormat(new AudioFormat.Builder().setSampleRate(PcmFrames.SAMPLE_RATE)
                         .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
                     .setBufferSizeInBytes(Math.max(captureMinimum,6400)).build();
                 if (!recorder.setPreferredDevice(input)) throw new IOException("Selected microphone route was rejected");
@@ -188,7 +189,7 @@ public final class RelayService extends Service {
             boolean outputVerified=false;
             long outputDeadline=SystemClock.elapsedRealtime()+3000;
             while (running.get()) {
-                byte[] pcm = FrameCodec.read(established.input);
+                byte[] pcm = established.readFrame();
                 if (pcm==null) throw new IOException("Desktop disconnected");
                 AudioDeviceInfo actual = player.getRoutedDevice();
                 if (outputVerified && (actual==null || actual.getId()!=output.getId())) throw new IOException("Selected playback route is not active");
@@ -255,7 +256,7 @@ public final class RelayService extends Service {
                 }
                 deadline=0;
                 microphoneVerified=true;
-                FrameCodec.write(connection.output,pcm,count);
+                connection.writeFrame(pcm,count);
                 status="Connected · selected microphone route verified by Android";
             }
         } catch (Exception error) {
@@ -264,7 +265,7 @@ public final class RelayService extends Service {
     }
 
     private void closeConnection() {
-        PinnedConnection active=connection;
+        DesktopLinkSession active=connection;
         connection=null;
         if (active!=null) {
             // SSLSocket.close() may send TLS close_notify and perform network I/O.
